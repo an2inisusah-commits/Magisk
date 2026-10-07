@@ -55,7 +55,7 @@ where
     }
 }
 
-#[derive(Default)]
+#[derive(Copy, Clone, Default)]
 pub struct DbSettings {
     pub root_access: RootAccess,
     pub multiuser_mode: MultiuserMode,
@@ -66,7 +66,7 @@ pub struct DbSettings {
 }
 
 #[repr(i32)]
-#[derive(Default, FromPrimitive)]
+#[derive(Copy, Clone, Default, FromPrimitive)]
 pub enum RootAccess {
     Disabled,
     AppsOnly,
@@ -76,7 +76,7 @@ pub enum RootAccess {
 }
 
 #[repr(i32)]
-#[derive(Default, FromPrimitive)]
+#[derive(Copy, Clone, Default, FromPrimitive)]
 pub enum MultiuserMode {
     #[default]
     OwnerOnly,
@@ -246,6 +246,9 @@ impl MagiskD {
     }
 
     pub fn get_db_setting(&self, key: DbEntryKey) -> i32 {
+        if self.is_headless && key == DbEntryKey::SuMultiuserMode {
+            return MultiuserMode::User as i32;
+        }
         // Get default values
         let mut val = match key {
             DbEntryKey::RootAccess => RootAccess::default() as i32,
@@ -277,6 +280,9 @@ impl MagiskD {
         };
         self.db_exec_with_rows("SELECT * FROM settings", &[], &mut cfg)
             .sql_result()?;
+        if self.is_headless {
+            cfg.multiuser_mode = MultiuserMode::User;
+        }
         Ok(cfg)
     }
 
